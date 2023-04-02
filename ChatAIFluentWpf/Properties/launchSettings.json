@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ChatAIFluentWpf": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
