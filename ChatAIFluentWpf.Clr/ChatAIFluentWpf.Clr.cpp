@@ -25,12 +25,49 @@ VoiceVoxWrapper::~VoiceVoxWrapper()
 }
 
 /// <summary>
+/// メタ情報取得
+/// </summary>
+/// <returns>メタ情報</returns>
+String^ VoiceVoxWrapper::GetMetasJson()
+{
+    return gcnew String(m_lpVoiceVox->GetMetasJson().c_str());
+}
+
+/// <summary>
+/// バージョン取得
+/// </summary>
+/// <returns>バージョン</returns>
+String^ VoiceVoxWrapper::GetVersion()
+{
+    return gcnew String(m_lpVoiceVox->GetVersion().c_str());
+}
+
+/// <summary>
+/// GPUモード取得
+/// </summary>
+/// <returns>GPUモード</returns>
+bool VoiceVoxWrapper::IsGpuMode()
+{
+    return m_lpVoiceVox->IsGpuMode();
+}
+
+/// <summary>
 /// coreの初期化
 /// </summary>
 /// <returns></returns>
 int VoiceVoxWrapper::Initialize()
 {
     return m_lpVoiceVox->Initialize();
+}
+
+/// <summary>
+/// モデルを読み込む
+/// </summary>
+/// <param name="speaker_id">話者ID</param>
+/// <returns></returns>
+int VoiceVoxWrapper::LoadModel(int speaker_id)
+{
+    return m_lpVoiceVox->LoadModel(speaker_id);
 }
 
 /// <summary>
@@ -66,6 +103,30 @@ MyVoiceVox::~MyVoiceVox() {
 }
 
 /// <summary>
+/// メタ情報取得
+/// </summary>
+/// <returns>メタ情報文字列</returns>
+std::wstring MyVoiceVox::GetMetasJson() {
+    return utf8_to_wide_cppapi(voicevox_get_metas_json());
+}
+
+/// <summary>
+/// バージョン取得
+/// </summary>
+/// <returns>バージョン</returns>
+std::string MyVoiceVox::GetVersion() {
+    return voicevox_get_version();
+}
+
+/// <summary>
+/// GPUモード取得
+/// </summary>
+/// <returns>GPUモード</returns>
+bool MyVoiceVox::IsGpuMode() {
+    return voicevox_is_gpu_mode();
+}
+
+/// <summary>
 /// coreの初期化
 /// </summary>
 /// <returns></returns>
@@ -74,10 +135,19 @@ HRESULT MyVoiceVox::Initialize() {
     std::string dict = GetOpenJTalkDict();
     auto sDict = wide_to_utf8_cppapi(m_wsDict);
     initializeOptions.open_jtalk_dict_dir = sDict.c_str();
-    initializeOptions.load_all_models = true;
+    initializeOptions.load_all_models = false;
 
-    auto result = VoicevoxResultCode::VOICEVOX_RESULT_OK;
     return voicevox_initialize(initializeOptions);
+}
+
+/// <summary>
+/// モデルを読み込む
+/// </summary>
+/// <param name="iSpeakerId">話者ID</param>
+/// <returns></returns>
+HRESULT MyVoiceVox::LoadModel(int iSpeakerId) {
+    m_iSpeakerId = iSpeakerId;
+    return voicevox_load_model(iSpeakerId);
 }
 
 /// <summary>
@@ -85,7 +155,7 @@ HRESULT MyVoiceVox::Initialize() {
 /// </summary>
 /// <returns></returns>
 HRESULT MyVoiceVox::GenerateVoice(std::wstring wsWords) {
-    int32_t speaker_id = 0;
+    int32_t speaker_id = m_iSpeakerId;
     uintptr_t output_binary_size = 0;
     uint8_t* output_wav = nullptr;
 

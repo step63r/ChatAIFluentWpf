@@ -26,6 +26,7 @@
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" Margin="8">
             <Grid.ColumnDefinitions>
@@ -36,12 +37,28 @@
             <ComboBox Grid.Column="1" ItemsSource="{Binding ViewModel.AudioDevices}" DisplayMemberPath="FriendlyName" SelectedItem="{Binding ViewModel.SelectedAudioDevice}" SelectedIndex="0" />
         </Grid>
         <Grid Grid.Row="1" Margin="8">
-            <Button Content="{Binding ViewModel.CaptureButtonContent}" Command="{Binding ViewModel.CaptureAudioCommand}" Height="40" />
+            <Button Content="{Binding ViewModel.CaptureButtonContent}" Command="{Binding ViewModel.CaptureAudioCommand}" Height="40" HorizontalAlignment="Stretch" />
         </Grid>
         <Grid Grid.Row="2" Margin="8">
             <ListView ItemsSource="{Binding ViewModel.Conversation, UpdateSourceTrigger=PropertyChanged}" />
         </Grid>
-        <Grid Grid.Row="0" Grid.RowSpan="3" Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BoolToVisibleConverter}}">
+        <Grid Grid.Row="3" Margin="8">
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="VoiceVox version: " />
+                    <TextBlock Text="{Binding ViewModel.VoiceVoxVersion}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="GPU mode: " />
+                    <TextBlock Text="{Binding ViewModel.VoiceVoxGpuMode}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Meta info: " />
+                    <TextBlock Text="{Binding ViewModel.MetaInfo}" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="0" Grid.RowSpan="4" Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BoolToVisibleConverter}}">
             <Grid.Background>
                 <SolidColorBrush Color="DarkGray" Opacity="0.5" />
             </Grid.Background>

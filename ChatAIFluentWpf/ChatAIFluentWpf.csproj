@@ -8,6 +8,15 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>applicationIcon.ico</ApplicationIcon>
+    <Description>Simple chat app with ChatGPT.</Description>
+    <Copyright>Copyright 2023 minato project.</Copyright>
+    <PackageProjectUrl>https://blog.minatoproject.com/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/step63r/ChatAIFluentWpf</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <NeutralLanguage>ja-JP</NeutralLanguage>
+    <FileVersion>2023.04.03.01</FileVersion>
+    <AssemblyVersion>2023.04.03.01</AssemblyVersion>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,6 +43,13 @@
     <None Remove="Assets\applicationIcon-1024.png" />
     <None Remove="Assets\applicationIcon-256.png" />
     <None Remove="NLog.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

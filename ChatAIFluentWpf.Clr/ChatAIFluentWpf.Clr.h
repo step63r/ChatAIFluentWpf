@@ -30,12 +30,18 @@ namespace ChatAIFluentWpf {
 			MyVoiceVox(std::wstring wsDict);				// コンストラクタ
 			virtual ~MyVoiceVox();							// デストラクタ
 
+			std::wstring GetMetasJson();					// メタ情報取得
+			std::string GetVersion();						// バージョン取得
+			bool IsGpuMode();								// GPUモード取得
+
 			HRESULT Initialize();							// coreの初期化
+			HRESULT LoadModel(int iSpeakerId);				// モデルを読み込む
 			HRESULT GenerateVoice(std::wstring wsWords);	// 音声の生成
 
 		private:
 			std::wstring m_wsDict;							// OpenJTalk辞書ファイルパス
 			uint8_t* m_output_wav;							// 
+			int m_iSpeakerId;								// 読み込んだモデルの話者ID
 
 			std::string GetOpenJTalkDict();					// OpenJTalk辞書のパスを取得
 			std::wstring GetWaveFileName();					// 音声ファイル名を取得
@@ -54,7 +60,12 @@ namespace ChatAIFluentWpf {
 			VoiceVoxWrapper(String^ dict);					// コンストラクタ
 			virtual ~VoiceVoxWrapper();						// デストラクタ
 
+			String^ GetMetasJson();							// メタ情報取得
+			String^ GetVersion();							// バージョン取得
+			bool IsGpuMode();								// GPUモード取得
+
 			int Initialize();								// coreの初期化
+			int LoadModel(int speaker_id);					// モデルを読み込む
 			int GenerateVoice(String^ words);				// 音声の生成
 
 		private:

@@ -70,5 +70,17 @@ namespace ChatAIFluentWpf.Properties {
                 this["AzureClientSecret"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int VoiceVoxSpeakerId {
+            get {
+                return ((int)(this["VoiceVoxSpeakerId"]));
+            }
+            set {
+                this["VoiceVoxSpeakerId"] = value;
+            }
+        }
     }
 }

@@ -17,7 +17,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Media;
+using System.Text.Json;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Wpf.Ui.Common.Interfaces;
 
 namespace ChatAIFluentWpf.ViewModels
@@ -70,6 +72,24 @@ namespace ChatAIFluentWpf.ViewModels
         /// </summary>
         [ObservableProperty]
         private ObservableCollection<string> _conversation = new();
+
+        /// <summary>
+        /// VoiceVoxのバージョン
+        /// </summary>
+        [ObservableProperty]
+        private string? _voiceVoxVersion = string.Empty;
+
+        /// <summary>
+        /// VoiceVoxのGPUモード
+        /// </summary>
+        [ObservableProperty]
+        private string? _voiceVoxGpuMode = string.Empty;
+
+        /// <summary>
+        /// 読み込んだモデルのメタ情報
+        /// </summary>
+        [ObservableProperty]
+        private string? _metaInfo = string.Empty;
         #endregion
 
         #region メンバ変数
@@ -110,6 +130,14 @@ namespace ChatAIFluentWpf.ViewModels
         /// Azure Key VaultのキーコンテナーURI
         /// </summary>
         private readonly string _azureKeyVaultUri = Properties.Settings.Default.AzureKeyVaultUri;
+        /// <summary>
+        /// VoiceVoxメタ情報
+        /// </summary>
+        private List<VoiceVoxMetaData> _voiceVoxMetaData = new();
+        /// <summary>
+        /// VoiceVoxの話者ID
+        /// </summary>
+        private readonly int _voiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
         #endregion
 
         #region コンストラクタ
@@ -183,6 +211,21 @@ namespace ChatAIFluentWpf.ViewModels
                 {
                     throw new Exception(initRet.ToString());
                 }
+
+                _voiceVoxMetaData = JsonSerializer.Deserialize<List<VoiceVoxMetaData>>(_wrapper.GetMetasJson());
+                var modelNames = GetVoiceVoxModelName(_voiceVoxSpeakerId);
+                MetaInfo = $"{modelNames.Item1} ({modelNames.Item2})";
+
+                // モデルの読み込み
+                var loadModelRet = ConvertFromInt(_wrapper.LoadModel(_voiceVoxSpeakerId));
+                if (loadModelRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
+                {
+                    throw new Exception(loadModelRet.ToString());
+                }
+
+                // バージョンとGPUモード取得
+                VoiceVoxVersion = _wrapper.GetVersion();
+                VoiceVoxGpuMode = _wrapper.IsGpuMode() ? "ON" : "OFF";
 
                 StatusBarMessage = "準備完了";
             });
@@ -268,6 +311,16 @@ namespace ChatAIFluentWpf.ViewModels
             _logger.Info("end");
         }
 
+        /// <summary>
+        /// 録音開始/停止ボタンが押下可能か判定
+        /// </summary>
+        /// <returns></returns>
+        private bool CanExecuteCaptureAudio()
+        {
+            return SelectedAudioDevice != null && !IsRecording && IsLoaded;
+        }
+        #endregion
+
         #region メンバメソッド
         /// <summary>
         /// int -> VoiceVoxResultCode
@@ -278,15 +331,23 @@ namespace ChatAIFluentWpf.ViewModels
         {
             return (VoiceVoxResultCode)Enum.ToObject(typeof(VoiceVoxResultCode), number);
         }
-        #endregion
 
         /// <summary>
-        /// 録音開始/停止ボタンが押下可能か判定
+        /// メタ情報から指定の話者の名前を音声タイプを取得する
         /// </summary>
+        /// <param name="speakerId">話者ID</param>
         /// <returns></returns>
-        private bool CanExecuteCaptureAudio()
+        private (string?, string?) GetVoiceVoxModelName(int speakerId)
         {
-            return SelectedAudioDevice != null && !IsRecording && IsLoaded;
+            foreach (var meta in _voiceVoxMetaData)
+            {
+                var ret = meta.Styles?.Where(item => item.Id == speakerId).FirstOrDefault();
+                if (ret != null)
+                {
+                    return (meta.Name, ret.Name);
+                }
+            }
+            throw new Exception($"Speaker ID: {speakerId} not found.");
         }
         #endregion
     }
