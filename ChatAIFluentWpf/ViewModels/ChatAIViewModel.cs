@@ -1,14 +1,13 @@
-﻿using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
-using ChatAIFluentWpf.Clr;
+﻿using Azure.Security.KeyVault.Secrets;
 using ChatAIFluentWpf.Common;
+using ChatAIFluentWpf.Services.Interfaces;
 using ChatAIWpf.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
+using Microsoft.Extensions.Logging;
 using NAudio.CoreAudioApi;
-using NLog;
 using OpenAI.GPT3;
 using OpenAI.GPT3.Managers;
 using OpenAI.GPT3.ObjectModels.RequestModels;
@@ -17,9 +16,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Media;
-using System.Text.Json;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using Wpf.Ui.Common.Interfaces;
 
 namespace ChatAIFluentWpf.ViewModels
@@ -99,17 +96,17 @@ namespace ChatAIFluentWpf.ViewModels
         [ObservableProperty]
         private string _captureButtonContent = "話す";
         /// <summary>
-        /// VoiceVoxをCLRで使うためのラッパークラス
-        /// </summary>
-        private VoiceVoxWrapper _wrapper;
-        /// <summary>
         /// ロガー
         /// </summary>
-        private readonly ILogger _logger = LogManager.GetCurrentClassLogger();
+        private readonly ILogger<ChatAIViewModel> _logger;
         /// <summary>
         /// オーディオサービス
         /// </summary>
         private readonly IAudioService _audioService;
+        /// <summary>
+        /// VoiceVoxサービス
+        /// </summary>
+        private readonly IVoiceVoxService _voiceVoxService;
         /// <summary>
         /// OpenAIサービスインスタンス
         /// </summary>
@@ -127,14 +124,6 @@ namespace ChatAIFluentWpf.ViewModels
         /// </summary>
         private SpeechConfig _speechConfig;
         /// <summary>
-        /// Azure Key VaultのキーコンテナーURI
-        /// </summary>
-        private readonly string _azureKeyVaultUri = Properties.Settings.Default.AzureKeyVaultUri;
-        /// <summary>
-        /// VoiceVoxメタ情報
-        /// </summary>
-        private List<VoiceVoxMetaData> _voiceVoxMetaData = new();
-        /// <summary>
         /// VoiceVoxの話者ID
         /// </summary>
         private readonly int _voiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
@@ -144,14 +133,19 @@ namespace ChatAIFluentWpf.ViewModels
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public ChatAIViewModel(IAudioService audioService)
+        /// <param name="logger"></param>
+        /// <param name="secretClient"></param>
+        /// <param name="audioService"></param>
+        /// <param name="voiceVoxService"></param>
+        public ChatAIViewModel(ILogger<ChatAIViewModel> logger, SecretClient secretClient, IAudioService audioService, IVoiceVoxService voiceVoxService)
         {
-            _logger.Info("start");
+            _logger = logger;
+            _secretClient = secretClient;
             _audioService = audioService;
+            _voiceVoxService = voiceVoxService;
 
             AudioDevices = _audioService.GetActiveCapture();
             SelectedAudioDevice = AudioDevices.FirstOrDefault();
-            _logger.Info("end");
         }
         #endregion
 
@@ -181,13 +175,11 @@ namespace ChatAIFluentWpf.ViewModels
         [RelayCommand]
         private async Task Loaded()
         {
-            _logger.Info("start");
+            _logger.LogInformation("start");
             await Task.Run(() =>
             {
                 StatusBarMessage = "OpenAIの初期化中...";
 
-                // Get secrets.
-                _secretClient = new SecretClient(new Uri(_azureKeyVaultUri), new DefaultAzureCredential());
                 var azureSpeechApiKey = _secretClient.GetSecretAsync("AzureSpeechAPIKey").Result;
                 var openAIApiKey = _secretClient.GetSecretAsync("OpenAIApiKey").Result;
 
@@ -205,32 +197,30 @@ namespace ChatAIFluentWpf.ViewModels
                 StatusBarMessage = "VoiceVoxの初期化中...";
 
                 // VoiceVoxの初期化
-                _wrapper = new VoiceVoxWrapper("open_jtalk_dic_utf_8-1.11");
-                var initRet = ConvertFromInt(_wrapper.Initialize());
+                var initRet = _voiceVoxService.Initialize();
                 if (initRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
                 {
                     throw new Exception(initRet.ToString());
                 }
 
-                _voiceVoxMetaData = JsonSerializer.Deserialize<List<VoiceVoxMetaData>>(_wrapper.GetMetasJson());
                 var modelNames = GetVoiceVoxModelName(_voiceVoxSpeakerId);
                 MetaInfo = $"{modelNames.Item1} ({modelNames.Item2})";
 
                 // モデルの読み込み
-                var loadModelRet = ConvertFromInt(_wrapper.LoadModel(_voiceVoxSpeakerId));
+                var loadModelRet = _voiceVoxService.LoadModel(_voiceVoxSpeakerId);
                 if (loadModelRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
                 {
                     throw new Exception(loadModelRet.ToString());
                 }
 
                 // バージョンとGPUモード取得
-                VoiceVoxVersion = _wrapper.GetVersion();
-                VoiceVoxGpuMode = _wrapper.IsGpuMode() ? "ON" : "OFF";
+                VoiceVoxVersion = _voiceVoxService.Version;
+                VoiceVoxGpuMode = _voiceVoxService.IsGpuMode ? "ON" : "OFF";
 
                 StatusBarMessage = "準備完了";
             });
             IsLoaded = true;
-            _logger.Info("end");
+            _logger.LogInformation("end");
         }
 
         /// <summary>
@@ -239,7 +229,7 @@ namespace ChatAIFluentWpf.ViewModels
         [RelayCommand(CanExecute = nameof(CanExecuteCaptureAudio))]
         private async Task CaptureAudio()
         {
-            _logger.Info("start");
+            _logger.LogInformation("start");
             var audioConfig = AudioConfig.FromMicrophoneInput(SelectedAudioDevice?.ID);
             using (var recognizer = new SpeechRecognizer(_speechConfig, audioConfig))
             {
@@ -269,9 +259,12 @@ namespace ChatAIFluentWpf.ViewModels
 
                         // VoiceVoxで再生
                         CaptureButtonContent = "音声生成中...";
-                        var ret = ConvertFromInt(_wrapper.GenerateVoice(completionResult.Choices.First().Message.Content));
+                        var ret = _voiceVoxService.GenerateVoice(completionResult.Choices.First().Message.Content);
                         if (ret != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
                         {
+                            _logger.LogError($"[SYSTEM] ERROR: VoiceVox handled error.");
+                            _logger.LogError($"[SYSTEM] ResultCode={ret}");
+
                             Conversation.Add($"[SYSTEM] ERROR: VoiceVox handled error.");
                             Conversation.Add($"[SYSTEM] ResultCode={ret}");
                         }
@@ -281,26 +274,37 @@ namespace ChatAIFluentWpf.ViewModels
                     }
                     else if (completionResult.Error != null)
                     {
+                        _logger.LogError($"[SYSTEM] ERROR: Chat GPT handled error.");
+                        _logger.LogError($"[SYSTEM] Code={completionResult.Error.Code}");
+                        _logger.LogError($"[SYSTEM] Message={completionResult.Error.Message}");
+
                         Conversation.Add($"[SYSTEM] ERROR: Chat GPT handled error.");
                         Conversation.Add($"[SYSTEM] Code={completionResult.Error.Code}");
                         Conversation.Add($"[SYSTEM] Message={completionResult.Error.Message}");
                     }
                     else
                     {
+                        _logger.LogError($"[SYSTEM] ERROR: Unknown error occurred at Chat GPT.");
                         Conversation.Add($"[SYSTEM] ERROR: Unknown error occurred at Chat GPT.");
                     }
                 }
                 else if (result.Reason == ResultReason.NoMatch)
                 {
+                    _logger.LogWarning($"[SYSTEM] NOMATCH: Speech could not be recognized.");
                     Conversation.Add($"[SYSTEM] NOMATCH: Speech could not be recognized.");
                 }
                 else if (result.Reason == ResultReason.Canceled)
                 {
                     var cancellation = CancellationDetails.FromResult(result);
+                    _logger.LogWarning($"[SYSTEM] CANCELED: Reason={cancellation.Reason}");
                     Conversation.Add($"[SYSTEM] CANCELED: Reason={cancellation.Reason}");
 
                     if (cancellation.Reason == CancellationReason.Error)
                     {
+                        _logger.LogError($"[SYSTEM] CANCELED: ErrorCode={cancellation.ErrorCode}");
+                        _logger.LogError($"[SYSTEM] CANCELED: ErrorDetails={cancellation.ErrorDetails}");
+                        _logger.LogError($"[SYSTEM] CANCELED: Did you update the subscription info?");
+
                         Conversation.Add($"[SYSTEM] CANCELED: ErrorCode={cancellation.ErrorCode}");
                         Conversation.Add($"[SYSTEM] CANCELED: ErrorDetails={cancellation.ErrorDetails}");
                         Conversation.Add($"[SYSTEM] CANCELED: Did you update the subscription info?");
@@ -308,7 +312,7 @@ namespace ChatAIFluentWpf.ViewModels
                 }
             }
             CaptureButtonContent = "話す";
-            _logger.Info("end");
+            _logger.LogInformation("end");
         }
 
         /// <summary>
@@ -323,23 +327,13 @@ namespace ChatAIFluentWpf.ViewModels
 
         #region メンバメソッド
         /// <summary>
-        /// int -> VoiceVoxResultCode
-        /// </summary>
-        /// <param name="number"></param>
-        /// <returns></returns>
-        private VoiceVoxResultCode ConvertFromInt(int number)
-        {
-            return (VoiceVoxResultCode)Enum.ToObject(typeof(VoiceVoxResultCode), number);
-        }
-
-        /// <summary>
         /// メタ情報から指定の話者の名前を音声タイプを取得する
         /// </summary>
         /// <param name="speakerId">話者ID</param>
         /// <returns></returns>
         private (string?, string?) GetVoiceVoxModelName(int speakerId)
         {
-            foreach (var meta in _voiceVoxMetaData)
+            foreach (var meta in _voiceVoxService.Metas)
             {
                 var ret = meta.Styles?.Where(item => item.Id == speakerId).FirstOrDefault();
                 if (ret != null)

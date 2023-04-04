@@ -1,9 +1,15 @@
-﻿using ChatAIFluentWpf.Models;
+﻿using Azure.Identity;
+using ChatAIFluentWpf.Models;
 using ChatAIFluentWpf.Services;
+using ChatAIFluentWpf.Services.Interfaces;
 using ChatAIWpf.Services.Interfaces;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using NLog.Extensions.Logging;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -43,6 +49,19 @@ namespace ChatAIFluentWpf
                 // Service containing navigation, same as INavigationWindow... but without window
                 services.AddSingleton<INavigationService, NavigationService>();
 
+                // register VoiceVox service.
+                services.AddSingleton<IVoiceVoxService, VoiceVoxService>();
+
+                // register Azure clinets.
+                services.AddAzureClients(clientBuilder =>
+                {
+                    // Add a KeyVault client.
+                    clientBuilder.AddSecretClient(new Uri(ChatAIFluentWpf.Properties.Settings.Default.AzureKeyVaultUri));
+
+                    // Use DefaultAzureCredential by default.
+                    clientBuilder.UseCredential(new DefaultAzureCredential());
+                });
+
                 // Main window with navigation
                 services.AddScoped<INavigationWindow, Views.Windows.MainWindow>();
                 services.AddScoped<ViewModels.MainWindowViewModel>();
@@ -58,6 +77,11 @@ namespace ChatAIFluentWpf
 
                 // Configuration
                 services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));
+            })
+            .ConfigureLogging(logBuilder =>
+            {
+                logBuilder.SetMinimumLevel(LogLevel.Information);
+                logBuilder.AddNLog("NLog.config");
             }).Build();
 
         /// <summary>
