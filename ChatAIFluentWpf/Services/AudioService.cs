@@ -1,4 +1,4 @@
-﻿using ChatAIWpf.Services.Interfaces;
+﻿using ChatAIFluentWpf.Services.Interfaces;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using System;

@@ -1,7 +1,6 @@
 ﻿using Azure.Security.KeyVault.Secrets;
 using ChatAIFluentWpf.Common;
 using ChatAIFluentWpf.Services.Interfaces;
-using ChatAIWpf.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.CognitiveServices.Speech;
@@ -126,7 +125,7 @@ namespace ChatAIFluentWpf.ViewModels
         /// <summary>
         /// VoiceVoxの話者ID
         /// </summary>
-        private readonly int _voiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
+        private int _voiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
         #endregion
 
         #region コンストラクタ
@@ -163,7 +162,11 @@ namespace ChatAIFluentWpf.ViewModels
         /// </summary>
         public void OnNavigatedTo()
         {
-            // ...
+            int newVoiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
+            if (_voiceVoxSpeakerId != newVoiceVoxSpeakerId)
+            {
+                _ = LoadModelAsync(Properties.Settings.Default.VoiceVoxSpeakerId);
+            }
         }
         #endregion
 
@@ -203,15 +206,7 @@ namespace ChatAIFluentWpf.ViewModels
                     throw new Exception(initRet.ToString());
                 }
 
-                var modelNames = GetVoiceVoxModelName(_voiceVoxSpeakerId);
-                MetaInfo = $"{modelNames.Item1} ({modelNames.Item2})";
-
-                // モデルの読み込み
-                var loadModelRet = _voiceVoxService.LoadModel(_voiceVoxSpeakerId);
-                if (loadModelRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
-                {
-                    throw new Exception(loadModelRet.ToString());
-                }
+                _ = LoadModelAsync(_voiceVoxSpeakerId);
 
                 // バージョンとGPUモード取得
                 VoiceVoxVersion = _voiceVoxService.Version;
@@ -325,23 +320,35 @@ namespace ChatAIFluentWpf.ViewModels
         }
         #endregion
 
-        #region メンバメソッド
+        #region メソッド
         /// <summary>
-        /// メタ情報から指定の話者の名前を音声タイプを取得する
+        /// VoiceVoxのモデルを読み込む
         /// </summary>
-        /// <param name="speakerId">話者ID</param>
         /// <returns></returns>
-        private (string?, string?) GetVoiceVoxModelName(int speakerId)
+        private async Task LoadModelAsync(int voiceVoxSpeakerId)
         {
-            foreach (var meta in _voiceVoxService.Metas)
+            _logger.LogInformation("start");
+            _voiceVoxSpeakerId = voiceVoxSpeakerId;
+            var (meta, style) = _voiceVoxService.GetMetadataFromSpeakerId(_voiceVoxSpeakerId);
+            MetaInfo = $"{meta.Name} ({style.Name})";
+
+            if (!_voiceVoxService.IsModelLoaded(_voiceVoxSpeakerId))
             {
-                var ret = meta.Styles?.Where(item => item.Id == speakerId).FirstOrDefault();
-                if (ret != null)
+                IsLoaded = false;
+                await Task.Run(() =>
                 {
-                    return (meta.Name, ret.Name);
-                }
+                    StatusBarMessage = "VoiceVoxのモデル読込中...";
+
+                    // モデルの読み込み
+                    var loadModelRet = _voiceVoxService.LoadModel(_voiceVoxSpeakerId);
+                    if (loadModelRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
+                    {
+                        throw new Exception(loadModelRet.ToString());
+                    }
+                });
+                IsLoaded = true;
             }
-            throw new Exception($"Speaker ID: {speakerId} not found.");
+            _logger.LogInformation("end");
         }
         #endregion
     }

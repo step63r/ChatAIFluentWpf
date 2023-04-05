@@ -52,6 +52,16 @@ bool VoiceVoxWrapper::IsGpuMode()
 }
 
 /// <summary>
+/// 指定した話者IDのモデルが読み込まれているか
+/// </summary>
+/// <param name="speakerId">話者ID</param>
+/// <returns></returns>
+bool VoiceVoxWrapper::IsModelLoaded(int speakerId)
+{
+    return m_lpVoiceVox->IsModelLoaded(speakerId);
+}
+
+/// <summary>
 /// coreの初期化
 /// </summary>
 /// <returns></returns>
@@ -124,6 +134,15 @@ std::string MyVoiceVox::GetVersion() {
 /// <returns>GPUモード</returns>
 bool MyVoiceVox::IsGpuMode() {
     return voicevox_is_gpu_mode();
+}
+
+/// <summary>
+/// 指定した話者IDのモデルが読み込まれているか
+/// </summary>
+/// <param name="iSpeakerId">話者ID</param>
+/// <returns></returns>
+bool MyVoiceVox::IsModelLoaded(int iSpeakerId) {
+    return voicevox_is_model_loaded(iSpeakerId);
 }
 
 /// <summary>

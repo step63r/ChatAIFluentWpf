@@ -2,7 +2,6 @@
 using ChatAIFluentWpf.Models;
 using ChatAIFluentWpf.Services;
 using ChatAIFluentWpf.Services.Interfaces;
-using ChatAIWpf.Services.Interfaces;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

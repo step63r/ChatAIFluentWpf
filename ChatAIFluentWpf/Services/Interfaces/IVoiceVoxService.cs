@@ -45,6 +45,20 @@ namespace ChatAIFluentWpf.Services.Interfaces
         /// <param name="words"></param>
         /// <returns></returns>
         VoiceVoxResultCode GenerateVoice(string words);
+
+        /// <summary>
+        /// 指定した話者IDのモデルが読み込まれているか
+        /// </summary>
+        /// <param name="speakerId">話者ID</param>
+        /// <returns></returns>
+        bool IsModelLoaded(int speakerId);
+
+        /// <summary>
+        /// 話者IDからメタ情報を取得する
+        /// </summary>
+        /// <param name="speakerId">話者ID</param>
+        /// <returns></returns>
+        (VoiceVoxMetaData Meta, VoiceVoxMetaData.VoiceVoxMetaDataStyles Style) GetMetadataFromSpeakerId(int speakerId);
         #endregion
     }
 }

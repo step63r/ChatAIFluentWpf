@@ -33,6 +33,7 @@ namespace ChatAIFluentWpf {
 			std::wstring GetMetasJson();					// メタ情報取得
 			std::string GetVersion();						// バージョン取得
 			bool IsGpuMode();								// GPUモード取得
+			bool IsModelLoaded(int iSpeakerId);				// 指定した話者IDのモデルが読み込まれているか
 
 			HRESULT Initialize();							// coreの初期化
 			HRESULT LoadModel(int iSpeakerId);				// モデルを読み込む
@@ -63,6 +64,7 @@ namespace ChatAIFluentWpf {
 			String^ GetMetasJson();							// メタ情報取得
 			String^ GetVersion();							// バージョン取得
 			bool IsGpuMode();								// GPUモード取得
+			bool IsModelLoaded(int speakerId);				// 指定した話者IDのモデルが読み込まれているか
 
 			int Initialize();								// coreの初期化
 			int LoadModel(int speaker_id);					// モデルを読み込む

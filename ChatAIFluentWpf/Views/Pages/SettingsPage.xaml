@@ -23,6 +23,17 @@
         <TextBlock
             FontSize="20"
             FontWeight="Medium"
+            Text="VoiceVox Settings" />
+        <TextBlock Margin="0,12,0,0" Text="Character" />
+        <ComboBox Margin="0,12,0,0" ItemsSource="{Binding ViewModel.Metadatas}" DisplayMemberPath="Name" SelectedItem="{Binding ViewModel.SelectedMetadata}" />
+        <TextBlock Margin="0,12,0,0" Text="Voice Type" />
+        <ComboBox Margin="0,12,0,0" ItemsSource="{Binding ViewModel.Styles}" DisplayMemberPath="Name" SelectedItem="{Binding ViewModel.SelectedStyle}" />
+        <Button Content="Save" Command="{Binding ViewModel.SaveCommand}" Margin="0,12,0,0" HorizontalAlignment="Stretch" />
+
+        <TextBlock
+            Margin="0,24,0,0"
+            FontSize="20"
+            FontWeight="Medium"
             Text="Personalization" />
         <TextBlock Margin="0,12,0,0" Text="Theme" />
         <RadioButton

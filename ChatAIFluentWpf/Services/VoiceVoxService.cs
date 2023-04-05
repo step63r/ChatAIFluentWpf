@@ -4,7 +4,9 @@ using ChatAIFluentWpf.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
+using System.Windows.Forms;
 
 namespace ChatAIFluentWpf.Services
 {
@@ -86,6 +88,37 @@ namespace ChatAIFluentWpf.Services
             var ret = ConvertFromInt(_wrapper.GenerateVoice(words));
             _logger.LogInformation($"end [{ret}]");
             return ret;
+        }
+
+        /// <summary>
+        /// 指定した話者IDのモデルが読み込まれているか
+        /// </summary>
+        /// <param name="speakerId">話者ID</param>
+        /// <returns></returns>
+        public bool IsModelLoaded(int speakerId)
+        {
+            _logger.LogInformation("start");
+            bool ret = _wrapper.IsModelLoaded(speakerId);
+            _logger.LogInformation("end");
+            return ret;
+        }
+
+        /// <summary>
+        /// 話者IDからメタ情報を取得する
+        /// </summary>
+        /// <param name="speakerId">話者ID</param>
+        /// <returns></returns>
+        public (VoiceVoxMetaData Meta, VoiceVoxMetaData.VoiceVoxMetaDataStyles Style) GetMetadataFromSpeakerId(int speakerId)
+        {
+            foreach (var meta in Metas)
+            {
+                var style = meta.Styles?.Where(item => item.Id == speakerId).FirstOrDefault();
+                if (style != null)
+                {
+                    return (meta, style);
+                }
+            }
+            throw new Exception($"Speaker ID: {speakerId} not found.");
         }
 
         /// <summary>

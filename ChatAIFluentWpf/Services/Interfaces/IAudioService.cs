@@ -1,6 +1,6 @@
 ﻿using NAudio.CoreAudioApi;
 
-namespace ChatAIWpf.Services.Interfaces
+namespace ChatAIFluentWpf.Services.Interfaces
 {
     /// <summary>
     /// オーディオサービス インターフェイス
