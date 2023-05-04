@@ -47,13 +47,18 @@ namespace ChatAIFluentWpf.ViewModels
         /// <summary>
         /// 初期化済フラグ
         /// </summary>
+        private bool _isInitialized = false;
+
+        /// <summary>
+        /// 読込済フラグ
+        /// </summary>
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsLoading))]
         [NotifyCanExecuteChangedFor(nameof(CaptureAudioCommand))]
         private bool _isLoaded = false;
 
         /// <summary>
-        /// 初期化中フラグ
+        /// 読込中フラグ
         /// </summary>
         public bool IsLoading => !IsLoaded;
 
@@ -162,11 +167,7 @@ namespace ChatAIFluentWpf.ViewModels
         /// </summary>
         public void OnNavigatedTo()
         {
-            int newVoiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
-            if (_voiceVoxSpeakerId != newVoiceVoxSpeakerId)
-            {
-                _ = LoadModelAsync(Properties.Settings.Default.VoiceVoxSpeakerId);
-            }
+            // ...
         }
         #endregion
 
@@ -179,42 +180,72 @@ namespace ChatAIFluentWpf.ViewModels
         private async Task Loaded()
         {
             _logger.LogInformation("start");
+
+            IsLoaded = false;
             await Task.Run(() =>
             {
-                StatusBarMessage = "OpenAIの初期化中...";
-
-                var azureSpeechApiKey = _secretClient.GetSecretAsync("AzureSpeechAPIKey").Result;
-                var openAIApiKey = _secretClient.GetSecretAsync("OpenAIApiKey").Result;
-
-                // Create instances.
-                _speechConfig = SpeechConfig.FromSubscription(azureSpeechApiKey.Value.Value, "eastus");
-                _speechConfig.SpeechRecognitionLanguage = "ja-JP";
-
-                _openAIService = new OpenAIService(new OpenAiOptions()
+                #region Azure Cognitive Servicesの初期化
+                if (!_isInitialized)
                 {
-                    ApiKey = openAIApiKey.Value.Value,
-                });
+                    StatusBarMessage = "Azure Cognitive Services の初期化中...";
+                    var azureSpeechApiKey = _secretClient.GetSecretAsync("AzureSpeechAPIKey").Result;
 
-                _messages.Add(ChatMessage.FromSystem("あなたは日本語で会話ができるチャットボットです。"));
+                    // Create instances.
+                    _speechConfig = SpeechConfig.FromSubscription(azureSpeechApiKey.Value.Value, "eastus");
+                    _speechConfig.SpeechRecognitionLanguage = "ja-JP";
+                }
+                #endregion
 
+                #region OpenAIの初期化
+                if (!_isInitialized)
+                {
+                    StatusBarMessage = "OpenAI の初期化中...";
+                    var openAIApiKey = _secretClient.GetSecretAsync("OpenAIApiKey").Result;
+
+                    _openAIService = new OpenAIService(new OpenAiOptions()
+                    {
+                        ApiKey = openAIApiKey.Value.Value,
+                    });
+
+                    _messages.Add(ChatMessage.FromSystem("あなたは日本語で会話ができるチャットボットです。"));
+                }
+                #endregion
+
+                #region VOICEVOXの初期化
                 StatusBarMessage = "VoiceVoxの初期化中...";
-
-                // VoiceVoxの初期化
-                var initRet = _voiceVoxService.Initialize();
-                if (initRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
+                if (!_isInitialized)
                 {
-                    throw new Exception(initRet.ToString());
+                    // VoiceVoxの初期化
+                    var initRet = _voiceVoxService.Initialize();
+                    if (initRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
+                    {
+                        throw new Exception(initRet.ToString());
+                    }
+
+                    // バージョンとGPUモード取得
+                    VoiceVoxVersion = _voiceVoxService.Version;
+                    VoiceVoxGpuMode = _voiceVoxService.IsGpuMode ? "ON" : "OFF";
                 }
 
-                _ = LoadModelAsync(_voiceVoxSpeakerId);
-
-                // バージョンとGPUモード取得
-                VoiceVoxVersion = _voiceVoxService.Version;
-                VoiceVoxGpuMode = _voiceVoxService.IsGpuMode ? "ON" : "OFF";
+                int voiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
+                if (!_isInitialized || _voiceVoxSpeakerId != voiceVoxSpeakerId)
+                {
+                    LoadModelAsync(voiceVoxSpeakerId);
+                    _voiceVoxService.SpeakerId = voiceVoxSpeakerId;
+                }
+                #endregion
 
                 StatusBarMessage = "準備完了";
             });
+
             IsLoaded = true;
+
+            // 初期化済フラグを立てる
+            if (!_isInitialized)
+            {
+                _isInitialized = true;
+            }
+
             _logger.LogInformation("end");
         }
 
@@ -327,7 +358,7 @@ namespace ChatAIFluentWpf.ViewModels
         /// VoiceVoxのモデルを読み込む
         /// </summary>
         /// <returns></returns>
-        private async Task LoadModelAsync(int voiceVoxSpeakerId)
+        private void LoadModelAsync(int voiceVoxSpeakerId)
         {
             _logger.LogInformation("start");
             _voiceVoxSpeakerId = voiceVoxSpeakerId;
@@ -336,19 +367,14 @@ namespace ChatAIFluentWpf.ViewModels
 
             if (!_voiceVoxService.IsModelLoaded(_voiceVoxSpeakerId))
             {
-                IsLoaded = false;
-                await Task.Run(() =>
-                {
-                    StatusBarMessage = "VoiceVoxのモデル読込中...";
+                StatusBarMessage = "VoiceVoxのモデル読込中...";
 
-                    // モデルの読み込み
-                    var loadModelRet = _voiceVoxService.LoadModel(_voiceVoxSpeakerId);
-                    if (loadModelRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
-                    {
-                        throw new Exception(loadModelRet.ToString());
-                    }
-                });
-                IsLoaded = true;
+                // モデルの読み込み
+                var loadModelRet = _voiceVoxService.LoadModel(_voiceVoxSpeakerId);
+                if (loadModelRet != VoiceVoxResultCode.VOICEVOX_RESULT_OK)
+                {
+                    throw new Exception(loadModelRet.ToString());
+                }
             }
             _logger.LogInformation("end");
         }

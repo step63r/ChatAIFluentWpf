@@ -26,6 +26,17 @@ namespace ChatAIFluentWpf.Services
         /// GPUモード
         /// </summary>
         public bool IsGpuMode => _wrapper.IsGpuMode();
+        /// <summary>
+        /// 話者ID
+        /// </summary>
+        public int SpeakerId
+        {
+            get => _wrapper.GetSpeakerId();
+            set
+            {
+                _wrapper.SetSpeakerId(value);
+            }
+        }
         #endregion
 
         #region メンバ変数
@@ -99,7 +110,7 @@ namespace ChatAIFluentWpf.Services
         {
             _logger.LogInformation("start");
             bool ret = _wrapper.IsModelLoaded(speakerId);
-            _logger.LogInformation("end");
+            _logger.LogInformation($"end [{ret}]");
             return ret;
         }
 

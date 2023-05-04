@@ -23,6 +23,11 @@ namespace ChatAIFluentWpf.Services.Interfaces
         /// GPUモード
         /// </summary>
         bool IsGpuMode { get; }
+
+        /// <summary>
+        /// 話者ID
+        /// </summary>
+        int SpeakerId { get; set; }
         #endregion
 
         #region メソッド

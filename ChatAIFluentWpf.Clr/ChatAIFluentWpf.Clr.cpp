@@ -43,6 +43,24 @@ String^ VoiceVoxWrapper::GetVersion()
 }
 
 /// <summary>
+/// 話者ID取得
+/// </summary>
+/// <returns>話者ID</returns>
+int VoiceVoxWrapper::GetSpeakerId()
+{
+    return m_lpVoiceVox->GetSpeakerId();
+}
+
+/// <summary>
+/// 話者ID設定
+/// </summary>
+/// <param name="speakerId">話者ID</param>
+void VoiceVoxWrapper::SetSpeakerId(int speakerId)
+{
+    m_lpVoiceVox->SetSpeakerId(speakerId);
+}
+
+/// <summary>
 /// GPUモード取得
 /// </summary>
 /// <returns>GPUモード</returns>
@@ -126,6 +144,22 @@ std::wstring MyVoiceVox::GetMetasJson() {
 /// <returns>バージョン</returns>
 std::string MyVoiceVox::GetVersion() {
     return voicevox_get_version();
+}
+
+/// <summary>
+/// 話者ID取得
+/// </summary>
+/// <returns>話者ID</returns>
+int MyVoiceVox::GetSpeakerId() {
+    return m_iSpeakerId;
+}
+
+/// <summary>
+/// 話者ID設定
+/// </summary>
+/// <param name="iSpeakerId">話者ID</param>
+void MyVoiceVox::SetSpeakerId(int iSpeakerId) {
+    m_iSpeakerId = iSpeakerId;
 }
 
 /// <summary>
