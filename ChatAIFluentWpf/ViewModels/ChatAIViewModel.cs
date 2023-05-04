@@ -263,9 +263,11 @@ namespace ChatAIFluentWpf.ViewModels
                             Conversation.Add($"[SYSTEM] ERROR: VoiceVox handled error.");
                             Conversation.Add($"[SYSTEM] ResultCode={ret}");
                         }
-
-                        var player = new SoundPlayer(@"./speech.wav");
-                        player.Play();
+                        else
+                        {
+                            var player = new SoundPlayer(@"./speech.wav");
+                            player.Play();
+                        }
                     }
                     else if (completionResult.Error != null)
                     {
