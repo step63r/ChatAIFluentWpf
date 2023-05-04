@@ -99,6 +99,10 @@ namespace ChatAIFluentWpf
         /// </summary>
         private async void OnStartup(object sender, StartupEventArgs e)
         {
+1            // configure Azure environment variables.
+            Environment.SetEnvironmentVariable("AZURE_CLIENT_ID", ChatAIFluentWpf.Properties.Settings.Default.AzureClientID);
+            Environment.SetEnvironmentVariable("AZURE_TENANT_ID", ChatAIFluentWpf.Properties.Settings.Default.AzureTenantID);
+            Environment.SetEnvironmentVariable("AZURE_CLIENT_SECRET", ChatAIFluentWpf.Properties.Settings.Default.AzureClientSecret);
             await _host.StartAsync();
         }
 
