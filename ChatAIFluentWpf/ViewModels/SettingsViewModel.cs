@@ -7,6 +7,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Wpf.Ui.Common.Interfaces;
+using Wpf.Ui.Mvvm.Contracts;
 using static ChatAIFluentWpf.Common.VoiceVoxMetaData;
 
 namespace ChatAIFluentWpf.ViewModels
@@ -43,6 +44,7 @@ namespace ChatAIFluentWpf.ViewModels
         /// 選択された音声タイプ
         /// </summary>
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
         private VoiceVoxMetaDataStyles _selectedStyle;
 
         #region メンバ変数
@@ -58,12 +60,23 @@ namespace ChatAIFluentWpf.ViewModels
         /// VoiceVoxの話者ID
         /// </summary>
         private int _voiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
+        /// <summary>
+        /// Snackbarサービス
+        /// </summary>
+        private readonly ISnackbarService _snackbarService;
         #endregion
 
-        public SettingsViewModel(ILogger<SettingsViewModel> logger, IVoiceVoxService voiceVoxService)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="voiceVoxService"></param>
+        /// <param name="snackbarService"></param>
+        public SettingsViewModel(ILogger<SettingsViewModel> logger, IVoiceVoxService voiceVoxService, ISnackbarService snackbarService)
         {
             _logger = logger;
             _voiceVoxService = voiceVoxService;
+            _snackbarService = snackbarService;
         }
 
         public void OnNavigatedTo()
@@ -130,12 +143,22 @@ namespace ChatAIFluentWpf.ViewModels
         /// <summary>
         /// 
         /// </summary>
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanExecuteSave))]
         private void Save()
         {
             _voiceVoxSpeakerId = SelectedStyle.Id;
             Properties.Settings.Default.VoiceVoxSpeakerId = _voiceVoxSpeakerId;
             Properties.Settings.Default.Save();
+            _ = _snackbarService.ShowAsync("保存完了", null, Wpf.Ui.Common.SymbolRegular.Info20);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private bool CanExecuteSave()
+        {
+            return SelectedStyle != null;
         }
     }
 }

@@ -45,6 +45,12 @@ namespace ChatAIFluentWpf
                 // TaskBar manipulation
                 services.AddSingleton<ITaskBarService, TaskBarService>();
 
+                // Dialog manipulation
+                services.AddSingleton<IDialogService, DialogService>();
+
+                // Snackbar manipulation
+                services.AddSingleton<ISnackbarService, SnackbarService>();
+
                 // Service containing navigation, same as INavigationWindow... but without window
                 services.AddSingleton<INavigationService, NavigationService>();
 

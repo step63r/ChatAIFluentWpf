@@ -70,6 +70,14 @@
                         VerticalAlignment="Top"
                         FontSize="28"
                         Navigation="{Binding ElementName=RootNavigation, Mode=OneWay}" />
+
+                    <ui:Snackbar
+                        x:Name="RootSnackbar"
+                        Grid.Row="1"
+                        MaxWidth="600"
+                        Appearance="Secondary"
+                        CloseButtonEnabled="True"
+                        Timeout="5000" />
                 </Grid>
             </Border>
         </Grid>

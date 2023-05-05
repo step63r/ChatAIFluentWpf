@@ -6,13 +6,15 @@
            xmlns:local="clr-namespace:ChatAIFluentWpf.Views.Pages"
            xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
            xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+           xmlns:uc="clr-namespace:ChatAIFluentWpf.Views.UserControls"
+           xmlns:model="clr-namespace:ChatAIFluentWpf.Models"
            Title="ChatAIPage"
            d:DataContext="{d:DesignInstance local:ChatAIPage, IsDesignTimeCreatable=False}"
            d:DesignHeight="450"
            d:DesignWidth="800"
            d:Background="{DynamicResource ApplicationBackgroundBrush}"
            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-           mc:Ignorable="d" >
+           mc:Ignorable="d">
     <ui:UiPage.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibleConverter" />
     </ui:UiPage.Resources>
@@ -24,10 +26,12 @@
     <Grid Margin="56,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
-            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
+
+        <!-- 入力デバイス選択 -->
         <Grid Grid.Row="0" Margin="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" />
@@ -36,28 +40,62 @@
             <TextBlock Grid.Column="0" Text="入力デバイス: " VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" ItemsSource="{Binding ViewModel.AudioDevices}" DisplayMemberPath="FriendlyName" SelectedItem="{Binding ViewModel.SelectedAudioDevice}" SelectedIndex="0" />
         </Grid>
+
+        <!-- チャットエリア -->
         <Grid Grid.Row="1" Margin="8">
-            <Button Content="{Binding ViewModel.CaptureButtonContent}" Command="{Binding ViewModel.CaptureAudioCommand}" Height="40" HorizontalAlignment="Stretch" />
+            <ItemsControl ItemsSource="{Binding ViewModel.Conversation, UpdateSourceTrigger=PropertyChanged}">
+                <ItemsControl.Template>
+                    <ControlTemplate TargetType="ItemsControl">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <ItemsPresenter Margin="4" />
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ItemsControl.Template>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel Orientation="Vertical" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.Resources>
+                    <DataTemplate DataType="{x:Type model:UserConversation}">
+                        <uc:MessageSentUserControl Message="{Binding Message}" HorizontalAlignment="Right" />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type model:BotConversation}">
+                        <uc:MessageReceivedUserControl Message="{Binding Message}" HorizontalAlignment="Left" />
+                    </DataTemplate>
+                </ItemsControl.Resources>
+            </ItemsControl>
         </Grid>
+
+        <!-- 録音ボタン -->
         <Grid Grid.Row="2" Margin="8">
-            <ListView ItemsSource="{Binding ViewModel.Conversation, UpdateSourceTrigger=PropertyChanged}" />
+            <ui:Button Appearance="Primary" Command="{Binding ViewModel.CaptureAudioCommand}" Height="40" HorizontalAlignment="Stretch">
+                <ui:Button.Content>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Mic20" FontSize="20" Margin="0,0,4,0" />
+                        <TextBlock Text="{Binding ViewModel.CaptureButtonContent}" />
+                    </StackPanel>
+                </ui:Button.Content>
+            </ui:Button>
         </Grid>
+
+        <!-- 各種情報表示エリア -->
         <Grid Grid.Row="3" Margin="8">
-            <StackPanel Orientation="Vertical">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="VoiceVox version: " />
-                    <TextBlock Text="{Binding ViewModel.VoiceVoxVersion}" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="GPU mode: " />
-                    <TextBlock Text="{Binding ViewModel.VoiceVoxGpuMode}" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Meta info: " />
-                    <TextBlock Text="{Binding ViewModel.MetaInfo}" />
-                </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Badge Appearance="Light" Margin="4,0,0,0">
+                    <ui:Badge.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="VoiceVox " />
+                            <TextBlock Text="{Binding ViewModel.VoiceVoxVersion}" />
+                        </StackPanel>
+                    </ui:Badge.Content>
+                </ui:Badge>
+                <ui:Badge Appearance="Light" Content="{Binding ViewModel.MetaInfo}" Margin="4,0,0,0" />
+                <ui:Badge Appearance="Info" Content="GPU Accelerated" Margin="4,0,0,0" Visibility="{Binding ViewModel.VoiceVoxGpuMode, Converter={StaticResource BoolToVisibleConverter}}" />
             </StackPanel>
         </Grid>
+
+        <!-- 最前面に表示する読込中レイヤー -->
         <Grid Grid.Row="0" Grid.RowSpan="4" Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BoolToVisibleConverter}}">
             <Grid.Background>
                 <SolidColorBrush Color="DarkGray" Opacity="0.5" />

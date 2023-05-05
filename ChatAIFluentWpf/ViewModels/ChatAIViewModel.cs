@@ -1,5 +1,6 @@
 ﻿using Azure.Security.KeyVault.Secrets;
 using ChatAIFluentWpf.Common;
+using ChatAIFluentWpf.Models;
 using ChatAIFluentWpf.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -17,9 +18,13 @@ using System.Linq;
 using System.Media;
 using System.Threading.Tasks;
 using Wpf.Ui.Common.Interfaces;
+using Wpf.Ui.Mvvm.Contracts;
 
 namespace ChatAIFluentWpf.ViewModels
 {
+    /// <summary>
+    /// ChatAIPage.xamlのViewModelクラス
+    /// </summary>
     public partial class ChatAIViewModel : ObservableObject, INavigationAware
     {
         #region プロパティ
@@ -72,7 +77,7 @@ namespace ChatAIFluentWpf.ViewModels
         /// 会話した内容
         /// </summary>
         [ObservableProperty]
-        private ObservableCollection<string> _conversation = new();
+        private ObservableCollection<IConversation> _conversation = new();
 
         /// <summary>
         /// VoiceVoxのバージョン
@@ -84,7 +89,7 @@ namespace ChatAIFluentWpf.ViewModels
         /// VoiceVoxのGPUモード
         /// </summary>
         [ObservableProperty]
-        private string? _voiceVoxGpuMode = string.Empty;
+        private bool _voiceVoxGpuMode = false;
 
         /// <summary>
         /// 読み込んだモデルのメタ情報
@@ -111,6 +116,10 @@ namespace ChatAIFluentWpf.ViewModels
         /// VoiceVoxサービス
         /// </summary>
         private readonly IVoiceVoxService _voiceVoxService;
+        /// <summary>
+        /// Snackbarサービス
+        /// </summary>
+        private readonly ISnackbarService _snackbarService;
         /// <summary>
         /// OpenAIサービスインスタンス
         /// </summary>
@@ -141,12 +150,14 @@ namespace ChatAIFluentWpf.ViewModels
         /// <param name="secretClient"></param>
         /// <param name="audioService"></param>
         /// <param name="voiceVoxService"></param>
-        public ChatAIViewModel(ILogger<ChatAIViewModel> logger, SecretClient secretClient, IAudioService audioService, IVoiceVoxService voiceVoxService)
+        /// <param name="snackbarService"></param>
+        public ChatAIViewModel(ILogger<ChatAIViewModel> logger, SecretClient secretClient, IAudioService audioService, IVoiceVoxService voiceVoxService, ISnackbarService snackbarService)
         {
             _logger = logger;
             _secretClient = secretClient;
             _audioService = audioService;
             _voiceVoxService = voiceVoxService;
+            _snackbarService = snackbarService;
 
             AudioDevices = _audioService.GetActiveCapture();
             SelectedAudioDevice = AudioDevices.FirstOrDefault();
@@ -224,14 +235,26 @@ namespace ChatAIFluentWpf.ViewModels
 
                     // バージョンとGPUモード取得
                     VoiceVoxVersion = _voiceVoxService.Version;
-                    VoiceVoxGpuMode = _voiceVoxService.IsGpuMode ? "ON" : "OFF";
+                    VoiceVoxGpuMode = _voiceVoxService.IsGpuMode;
                 }
 
                 int voiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
                 if (!_isInitialized || _voiceVoxSpeakerId != voiceVoxSpeakerId)
                 {
-                    LoadModelAsync(voiceVoxSpeakerId);
-                    _voiceVoxService.SpeakerId = voiceVoxSpeakerId;
+                    try
+                    {
+                        LoadModelAsync(voiceVoxSpeakerId);
+                        _voiceVoxService.SpeakerId = voiceVoxSpeakerId;
+                    }
+                    catch (Exception ex)
+                    {
+                        // TODO: ここに書いてはいけないかもしれない
+                        _ = _snackbarService.ShowAsync(
+                            "合成音声辞書ファイル読込時にエラーが発生しました",
+                            ex.ToString(),
+                            Wpf.Ui.Common.SymbolRegular.ErrorCircle20,
+                            Wpf.Ui.Common.ControlAppearance.Danger);
+                    }
                 }
                 #endregion
 
@@ -244,6 +267,10 @@ namespace ChatAIFluentWpf.ViewModels
             if (!_isInitialized)
             {
                 _isInitialized = true;
+                _ = _snackbarService.ShowAsync(
+                    "準備完了",
+                    null,
+                    Wpf.Ui.Common.SymbolRegular.Info20);
             }
 
             _logger.LogInformation("end");
@@ -267,7 +294,7 @@ namespace ChatAIFluentWpf.ViewModels
                 // Checks result.
                 if (result.Reason == ResultReason.RecognizedSpeech)
                 {
-                    Conversation.Add($"あなた: {result.Text}");
+                    Conversation.Add(new UserConversation("あなた", result.Text, DateTime.Now));
                     _messages.Add(ChatMessage.FromUser(result.Text));
 
                     CaptureButtonContent = "解析中...";
@@ -280,7 +307,7 @@ namespace ChatAIFluentWpf.ViewModels
 
                     if (completionResult.Successful)
                     {
-                        Conversation.Add($"ChatGPT: {completionResult.Choices.First().Message.Content}");
+                        Conversation.Add(new BotConversation("ChatGPT", completionResult.Choices.First().Message.Content, DateTime.Now));
                         _messages.Add(ChatMessage.FromAssistant(completionResult.Choices.First().Message.Content));
 
                         // VoiceVoxで再生
@@ -291,8 +318,11 @@ namespace ChatAIFluentWpf.ViewModels
                             _logger.LogError($"[SYSTEM] ERROR: VoiceVox handled error.");
                             _logger.LogError($"[SYSTEM] ResultCode={ret}");
 
-                            Conversation.Add($"[SYSTEM] ERROR: VoiceVox handled error.");
-                            Conversation.Add($"[SYSTEM] ResultCode={ret}");
+                            _ = _snackbarService.ShowAsync(
+                                "VOICEVOXエンジンでエラーが発生しました",
+                                $"ResultCode: {ret}",
+                                Wpf.Ui.Common.SymbolRegular.ErrorCircle20,
+                                Wpf.Ui.Common.ControlAppearance.Danger);
                         }
                         else
                         {
@@ -306,26 +336,37 @@ namespace ChatAIFluentWpf.ViewModels
                         _logger.LogError($"[SYSTEM] Code={completionResult.Error.Code}");
                         _logger.LogError($"[SYSTEM] Message={completionResult.Error.Message}");
 
-                        Conversation.Add($"[SYSTEM] ERROR: Chat GPT handled error.");
-                        Conversation.Add($"[SYSTEM] Code={completionResult.Error.Code}");
-                        Conversation.Add($"[SYSTEM] Message={completionResult.Error.Message}");
+                        _ = _snackbarService.ShowAsync(
+                            "ChatGPTでエラーが発生しました",
+                            $"{completionResult.Error.Message} (Code: {completionResult.Error.Code})",
+                            Wpf.Ui.Common.SymbolRegular.ErrorCircle20,
+                            Wpf.Ui.Common.ControlAppearance.Danger);
                     }
                     else
                     {
                         _logger.LogError($"[SYSTEM] ERROR: Unknown error occurred at Chat GPT.");
-                        Conversation.Add($"[SYSTEM] ERROR: Unknown error occurred at Chat GPT.");
+
+                        _ = _snackbarService.ShowAsync(
+                            "ChatGPTでエラーが発生しました",
+                            "不明なエラー",
+                            Wpf.Ui.Common.SymbolRegular.ErrorCircle20,
+                            Wpf.Ui.Common.ControlAppearance.Danger);
                     }
                 }
                 else if (result.Reason == ResultReason.NoMatch)
                 {
                     _logger.LogWarning($"[SYSTEM] NOMATCH: Speech could not be recognized.");
-                    Conversation.Add($"[SYSTEM] NOMATCH: Speech could not be recognized.");
+
+                    _ = _snackbarService.ShowAsync(
+                        "Azure Cognitive Servicesからの通知",
+                        "音声入力が認識されませんでした",
+                        Wpf.Ui.Common.SymbolRegular.Warning20,
+                        Wpf.Ui.Common.ControlAppearance.Caution);
                 }
                 else if (result.Reason == ResultReason.Canceled)
                 {
                     var cancellation = CancellationDetails.FromResult(result);
                     _logger.LogWarning($"[SYSTEM] CANCELED: Reason={cancellation.Reason}");
-                    Conversation.Add($"[SYSTEM] CANCELED: Reason={cancellation.Reason}");
 
                     if (cancellation.Reason == CancellationReason.Error)
                     {
@@ -333,9 +374,11 @@ namespace ChatAIFluentWpf.ViewModels
                         _logger.LogError($"[SYSTEM] CANCELED: ErrorDetails={cancellation.ErrorDetails}");
                         _logger.LogError($"[SYSTEM] CANCELED: Did you update the subscription info?");
 
-                        Conversation.Add($"[SYSTEM] CANCELED: ErrorCode={cancellation.ErrorCode}");
-                        Conversation.Add($"[SYSTEM] CANCELED: ErrorDetails={cancellation.ErrorDetails}");
-                        Conversation.Add($"[SYSTEM] CANCELED: Did you update the subscription info?");
+                        _ = _snackbarService.ShowAsync(
+                            "Azure Cognitive Servicesでエラーが発生しました",
+                            $"{cancellation.ErrorDetails} (ErrorCode: {cancellation.ErrorCode})",
+                            Wpf.Ui.Common.SymbolRegular.ErrorCircle20,
+                            Wpf.Ui.Common.ControlAppearance.Danger);
                     }
                 }
             }
@@ -357,7 +400,8 @@ namespace ChatAIFluentWpf.ViewModels
         /// <summary>
         /// VoiceVoxのモデルを読み込む
         /// </summary>
-        /// <returns></returns>
+        /// <param name="voiceVoxSpeakerId"></param>
+        /// <exception cref="Exception"></exception>
         private void LoadModelAsync(int voiceVoxSpeakerId)
         {
             _logger.LogInformation("start");
