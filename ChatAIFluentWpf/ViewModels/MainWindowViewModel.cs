@@ -38,7 +38,7 @@ namespace ChatAIFluentWpf.ViewModels
             {
                 new NavigationItem()
                 {
-                    Content = "ChatAI",
+                    Content = "Chat AI",
                     PageTag = "chatai",
                     Icon = SymbolRegular.Home24,
                     PageType = typeof(Views.Pages.ChatAIPage)
@@ -49,7 +49,7 @@ namespace ChatAIFluentWpf.ViewModels
             {
                 new NavigationItem()
                 {
-                    Content = "Settings",
+                    Content = "設定",
                     PageTag = "settings",
                     Icon = SymbolRegular.Settings24,
                     PageType = typeof(Views.Pages.SettingsPage)

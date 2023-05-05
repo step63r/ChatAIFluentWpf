@@ -25,24 +25,13 @@
     </i:Interaction.Triggers>
     <Grid Margin="56,0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <!-- 入力デバイス選択 -->
-        <Grid Grid.Row="0" Margin="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="入力デバイス: " VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" ItemsSource="{Binding ViewModel.AudioDevices}" DisplayMemberPath="FriendlyName" SelectedItem="{Binding ViewModel.SelectedAudioDevice}" SelectedIndex="0" />
-        </Grid>
-
         <!-- チャットエリア -->
-        <Grid Grid.Row="1" Margin="8">
+        <Grid Grid.Row="0" Margin="8">
             <ItemsControl ItemsSource="{Binding ViewModel.Conversation, UpdateSourceTrigger=PropertyChanged}">
                 <ItemsControl.Template>
                     <ControlTemplate TargetType="ItemsControl">
@@ -68,7 +57,7 @@
         </Grid>
 
         <!-- 録音ボタン -->
-        <Grid Grid.Row="2" Margin="8">
+        <Grid Grid.Row="1" Margin="8">
             <ui:Button Appearance="Primary" Command="{Binding ViewModel.CaptureAudioCommand}" Height="40" HorizontalAlignment="Stretch">
                 <ui:Button.Content>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -80,7 +69,7 @@
         </Grid>
 
         <!-- 各種情報表示エリア -->
-        <Grid Grid.Row="3" Margin="8">
+        <Grid Grid.Row="2" Margin="8">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <ui:Badge Appearance="Light" Margin="4,0,0,0">
                     <ui:Badge.Content>
@@ -96,7 +85,7 @@
         </Grid>
 
         <!-- 最前面に表示する読込中レイヤー -->
-        <Grid Grid.Row="0" Grid.RowSpan="4" Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BoolToVisibleConverter}}">
+        <Grid Grid.Row="0" Grid.RowSpan="3" Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BoolToVisibleConverter}}">
             <Grid.Background>
                 <SolidColorBrush Color="DarkGray" Opacity="0.5" />
             </Grid.Background>

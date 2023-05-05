@@ -81,5 +81,10 @@
                 </Grid>
             </Border>
         </Grid>
+        <ui:Dialog
+            x:Name="RootDialog"
+            Grid.Column="1"
+            ButtonLeftName="OK"
+            ButtonRightName="Cancel" />
     </Grid>
 </ui:UiWindow>

@@ -7,7 +7,6 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.Extensions.Logging;
-using NAudio.CoreAudioApi;
 using OpenAI.GPT3;
 using OpenAI.GPT3.Managers;
 using OpenAI.GPT3.ObjectModels.RequestModels;
@@ -28,19 +27,6 @@ namespace ChatAIFluentWpf.ViewModels
     public partial class ChatAIViewModel : ObservableObject, INavigationAware
     {
         #region プロパティ
-        /// <summary>
-        /// コンボボックスに表示する入力デバイス一覧
-        /// </summary>
-        [ObservableProperty]
-        private MMDeviceCollection? _audioDevices;
-
-        /// <summary>
-        /// 選択された入力デバイス
-        /// </summary>
-        [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(CaptureAudioCommand))]
-        private MMDevice? _selectedAudioDevice;
-
         /// <summary>
         /// 録音中フラグ
         /// </summary>
@@ -95,7 +81,7 @@ namespace ChatAIFluentWpf.ViewModels
         /// 読み込んだモデルのメタ情報
         /// </summary>
         [ObservableProperty]
-        private string? _metaInfo = string.Empty;
+        private string? _metaInfo = "メタ情報";
         #endregion
 
         #region メンバ変数
@@ -140,6 +126,10 @@ namespace ChatAIFluentWpf.ViewModels
         /// VoiceVoxの話者ID
         /// </summary>
         private int _voiceVoxSpeakerId = Properties.Settings.Default.VoiceVoxSpeakerId;
+        /// <summary>
+        /// 使用するオーディオインターフェイスID
+        /// </summary>
+        private string _audioDeviceId = Properties.Settings.Default.AudioDeviceId ?? string.Empty;
         #endregion
 
         #region コンストラクタ
@@ -158,9 +148,6 @@ namespace ChatAIFluentWpf.ViewModels
             _audioService = audioService;
             _voiceVoxService = voiceVoxService;
             _snackbarService = snackbarService;
-
-            AudioDevices = _audioService.GetActiveCapture();
-            SelectedAudioDevice = AudioDevices.FirstOrDefault();
         }
         #endregion
 
@@ -178,9 +165,43 @@ namespace ChatAIFluentWpf.ViewModels
         /// </summary>
         public void OnNavigatedTo()
         {
-            // ...
+            if (!_isInitialized)
+                InitializeViewModel();
         }
         #endregion
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void InitializeViewModel()
+        {
+            // 初回ロード時、デバイスが未選択でなおかつ有効なデバイスがあればそれを選択する
+            var devices = _audioService.GetActiveCapture();
+            if (string.IsNullOrEmpty(_audioDeviceId) || devices.Where(item => _audioDeviceId.Equals(item.ID)).FirstOrDefault() == null)
+            {
+                if (devices?.Count > 0)
+                {
+                    var defaultDevice = devices.First();
+                    _audioDeviceId = defaultDevice.ID;
+                    _logger.LogWarning($"Selected first-detected device (ID: {_audioDeviceId})");
+                    _ = _snackbarService.ShowAsync(
+                        $"入力デバイスを自動選択しました ({defaultDevice.FriendlyName})",
+                        "必要に応じて設定ページから入力デバイスを変更してください。",
+                        Wpf.Ui.Common.SymbolRegular.Warning20,
+                        Wpf.Ui.Common.ControlAppearance.Caution);
+                }
+                else
+                {
+                    _audioDeviceId = string.Empty;
+                    _logger.LogWarning("No audio devices found!");
+                    _ = _snackbarService.ShowAsync(
+                        "入力デバイスが見つかりませんでした",
+                        "有効な入力デバイスを接続してアプリを再起動してください。",
+                        Wpf.Ui.Common.SymbolRegular.Warning20,
+                        Wpf.Ui.Common.ControlAppearance.Caution);
+                }
+            }
+        }
 
         #region コマンド
         /// <summary>
@@ -196,15 +217,20 @@ namespace ChatAIFluentWpf.ViewModels
             await Task.Run(() =>
             {
                 #region Azure Cognitive Servicesの初期化
-                if (!_isInitialized)
-                {
-                    StatusBarMessage = "Azure Cognitive Services の初期化中...";
-                    var azureSpeechApiKey = _secretClient.GetSecretAsync("AzureSpeechAPIKey").Result;
+                StatusBarMessage = "Azure Cognitive Services の初期化中...";
+                var azureSpeechApiKey = _secretClient.GetSecretAsync("AzureSpeechAPIKey").Result;
 
-                    // Create instances.
-                    _speechConfig = SpeechConfig.FromSubscription(azureSpeechApiKey.Value.Value, "eastus");
-                    _speechConfig.SpeechRecognitionLanguage = "ja-JP";
-                }
+                // Create instances.
+                _speechConfig = SpeechConfig.FromSubscription(azureSpeechApiKey.Value.Value, "eastus");
+                // セグメント化の無音タイムアウトの設定
+                _speechConfig.SetProperty(
+                    PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs,
+                    Properties.Settings.Default.SpeechServiceConnection_InitialSilenceTimeoutMs.ToString());
+                // 初期無音タイムアウトの設定
+                _speechConfig.SetProperty(
+                    PropertyId.Speech_SegmentationSilenceTimeoutMs,
+                    Properties.Settings.Default.Speech_SegmentationSilenceTimeoutMs.ToString());
+                _speechConfig.SpeechRecognitionLanguage = "ja-JP";
                 #endregion
 
                 #region OpenAIの初期化
@@ -218,7 +244,15 @@ namespace ChatAIFluentWpf.ViewModels
                         ApiKey = openAIApiKey.Value.Value,
                     });
 
-                    _messages.Add(ChatMessage.FromSystem("あなたは日本語で会話ができるチャットボットです。"));
+                    // 初期システムプロンプトの作成
+                    var initPrompts = Properties.Settings.Default.InitialSystemPrompt.Split("\r\n");
+                    foreach (string prompt in initPrompts)
+                    {
+                        if (!string.IsNullOrEmpty(prompt))
+                        {
+                            _messages.Add(ChatMessage.FromSystem(prompt));
+                        }
+                    }
                 }
                 #endregion
 
@@ -267,10 +301,6 @@ namespace ChatAIFluentWpf.ViewModels
             if (!_isInitialized)
             {
                 _isInitialized = true;
-                _ = _snackbarService.ShowAsync(
-                    "準備完了",
-                    null,
-                    Wpf.Ui.Common.SymbolRegular.Info20);
             }
 
             _logger.LogInformation("end");
@@ -283,7 +313,7 @@ namespace ChatAIFluentWpf.ViewModels
         private async Task CaptureAudio()
         {
             _logger.LogInformation("start");
-            var audioConfig = AudioConfig.FromMicrophoneInput(SelectedAudioDevice?.ID);
+            var audioConfig = AudioConfig.FromMicrophoneInput(_audioDeviceId);
             using (var recognizer = new SpeechRecognizer(_speechConfig, audioConfig))
             {
                 CaptureButtonContent = "話してください…";
@@ -302,7 +332,8 @@ namespace ChatAIFluentWpf.ViewModels
                     {
                         Messages = _messages,
                         Model = "gpt-3.5-turbo",
-                        MaxTokens = 150,
+                        MaxTokens = Properties.Settings.Default.MaxTokens,
+                        Temperature = (float)Properties.Settings.Default.Temperature,
                     });
 
                     if (completionResult.Successful)
@@ -392,7 +423,7 @@ namespace ChatAIFluentWpf.ViewModels
         /// <returns></returns>
         private bool CanExecuteCaptureAudio()
         {
-            return SelectedAudioDevice != null && !IsRecording && IsLoaded;
+            return !string.IsNullOrEmpty(_audioDeviceId) && !IsRecording && IsLoaded;
         }
         #endregion
 

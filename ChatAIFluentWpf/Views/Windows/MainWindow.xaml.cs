@@ -16,7 +16,7 @@ namespace ChatAIFluentWpf.Views.Windows
             get;
         }
 
-        public MainWindow(ViewModels.MainWindowViewModel viewModel, IPageService pageService, INavigationService navigationService, ISnackbarService snackbarService)
+        public MainWindow(ViewModels.MainWindowViewModel viewModel, IPageService pageService, INavigationService navigationService, ISnackbarService snackbarService, IDialogService dialogService)
         {
             ViewModel = viewModel;
             DataContext = this;
@@ -27,6 +27,7 @@ namespace ChatAIFluentWpf.Views.Windows
 
             navigationService.SetNavigationControl(RootNavigation);
             snackbarService.SetSnackbarControl(RootSnackbar);
+            dialogService.SetDialogControl(RootDialog);
         }
 
         #region INavigationWindow methods

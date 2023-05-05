@@ -17,5 +17,23 @@
     <Setting Name="VoiceVoxSpeakerId" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
+    <Setting Name="SpeechServiceConnection_InitialSilenceTimeoutMs" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5000</Value>
+    </Setting>
+    <Setting Name="Speech_SegmentationSilenceTimeoutMs" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">500</Value>
+    </Setting>
+    <Setting Name="InitialSystemPrompt" Type="System.String" Scope="User">
+      <Value Profile="(Default)">あなたは日本語で会話ができるチャットボットです。</Value>
+    </Setting>
+    <Setting Name="AudioDeviceId" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="MaxTokens" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">150</Value>
+    </Setting>
+    <Setting Name="Temperature" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">0.5</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -82,5 +82,77 @@ namespace ChatAIFluentWpf.Properties {
                 this["VoiceVoxSpeakerId"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5000")]
+        public int SpeechServiceConnection_InitialSilenceTimeoutMs {
+            get {
+                return ((int)(this["SpeechServiceConnection_InitialSilenceTimeoutMs"]));
+            }
+            set {
+                this["SpeechServiceConnection_InitialSilenceTimeoutMs"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("500")]
+        public int Speech_SegmentationSilenceTimeoutMs {
+            get {
+                return ((int)(this["Speech_SegmentationSilenceTimeoutMs"]));
+            }
+            set {
+                this["Speech_SegmentationSilenceTimeoutMs"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("あなたは日本語で会話ができるチャットボットです。")]
+        public string InitialSystemPrompt {
+            get {
+                return ((string)(this["InitialSystemPrompt"]));
+            }
+            set {
+                this["InitialSystemPrompt"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string AudioDeviceId {
+            get {
+                return ((string)(this["AudioDeviceId"]));
+            }
+            set {
+                this["AudioDeviceId"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("150")]
+        public int MaxTokens {
+            get {
+                return ((int)(this["MaxTokens"]));
+            }
+            set {
+                this["MaxTokens"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.5")]
+        public double Temperature {
+            get {
+                return ((double)(this["Temperature"]));
+            }
+            set {
+                this["Temperature"] = value;
+            }
+        }
     }
 }

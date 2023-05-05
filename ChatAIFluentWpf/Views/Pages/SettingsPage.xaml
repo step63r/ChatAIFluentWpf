@@ -7,10 +7,11 @@
     xmlns:local="clr-namespace:ChatAIFluentWpf.Views.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:common="clr-namespace:ChatAIFluentWpf.Common"
     Title="SettingsPage"
     d:DataContext="{d:DesignInstance local:SettingsPage,
                                      IsDesignTimeCreatable=False}"
-    d:DesignHeight="450"
+    d:DesignHeight="1400"
     d:DesignWidth="800"
     d:Background="{DynamicResource ApplicationBackgroundBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -18,24 +19,48 @@
     Scrollable="True">
     <ui:UiPage.Resources>
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <common:ChatModelViewData x:Key="ChatModel" />
     </ui:UiPage.Resources>
 
     <StackPanel Margin="56,0">
-        <TextBlock
-            FontSize="20"
-            FontWeight="Medium"
-            Text="VOICEVOX 設定" />
+        <TextBlock FontSize="20" FontWeight="Medium" Text="デバイス設定" />
+        <TextBlock Margin="0,12,0,0" Text="入力デバイス" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding ViewModel.AudioDevices}" DisplayMemberPath="FriendlyName" SelectedItem="{Binding ViewModel.SelectedAudioDevice}" />
+        <Separator Margin="0,8" />
+
+        <TextBlock FontSize="20" FontWeight="Medium" Text="音声入力設定" />
+        <TextBlock Margin="0,12,0,0" Text="初期無音タイムアウト" />
+        <ui:NumberBox Margin="0,12,0,0" Min="0" Max="30000" DecimalPlaces="0" IntegersOnly="True" Value="{Binding ViewModel.InitialSilenceTimeoutMs}" />
+        <TextBlock Margin="0,12,0,0" Text="セグメント化の無音タイムアウト" />
+        <ui:NumberBox Margin="0,12,0,0" Min="100" Max="5000" DecimalPlaces="0" IntegersOnly="True" Value="{Binding ViewModel.SegmentationSilenceTimeoutMs}" />
+        <Separator Margin="0,8" />
+
+        <TextBlock FontSize="20" FontWeight="Medium" Text="チャット設定" />
+        <TextBlock Margin="0,12,0,0" Text="モデル (変更不可)" />
+        <ComboBox Margin="0,12,0,0" ItemsSource="{Binding Dictionary, Source={StaticResource ChatModel}}"
+                  DisplayMemberPath="Value" SelectedValuePath="Key" SelectedIndex="0" IsEnabled="False" />
+        <TextBlock Margin="0,12,0,0" Text="初期化プロンプト" />
+        <ui:TextBox Margin="0,12,0,0" MinLines="3" MaxLines="3" AcceptsReturn="True"
+                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible"
+                    PlaceholderText="初期化時に指定するシステムメッセージを入力します..."
+                    Text="{Binding ViewModel.InitialSystemPrompt}" />
+        <ui:InfoBar Margin="0,12,0,0" Message="初期化プロンプトはアプリを再起動するまで反映されません" Severity="Warning" IsOpen="True" IsClosable="False" />
+        <TextBlock Margin="0,12,0,0" Text="Max Tokens" />
+        <ui:NumberBox Margin="0,12,0,0" Min="100" Max="1024" DecimalPlaces="0" IntegersOnly="True" Value="{Binding ViewModel.MaxTokens}" />
+        <TextBlock Margin="0,12,0,0" Text="Temperature" />
+        <ui:NumberBox Margin="0,12,0,0" Min="0.0" Max="2.0" DecimalPlaces="1" IntegersOnly="False" Step="0.1" Value="{Binding ViewModel.Temperature}" />
+        <Separator Margin="0,8" />
+        
+        <TextBlock FontSize="20" FontWeight="Medium" Text="合成音声設定" />
         <TextBlock Margin="0,12,0,0" Text="キャラクター" />
         <ComboBox Margin="0,12,0,0" ItemsSource="{Binding ViewModel.Metadatas}" DisplayMemberPath="Name" SelectedItem="{Binding ViewModel.SelectedMetadata}" />
         <TextBlock Margin="0,12,0,0" Text="ボイス タイプ" />
         <ComboBox Margin="0,12,0,0" ItemsSource="{Binding ViewModel.Styles}" DisplayMemberPath="Name" SelectedItem="{Binding ViewModel.SelectedStyle}" />
         <ui:Button Content="保存" Appearance="Primary" Command="{Binding ViewModel.SaveCommand}" Height="40" Margin="0,12,0,0" HorizontalAlignment="Stretch" />
-
-        <TextBlock
-            Margin="0,24,0,0"
-            FontSize="20"
-            FontWeight="Medium"
-            Text="個人設定" />
+        <ui:Button Content="キャンセル" Command="{Binding ViewModel.CancelCommand}" Height="40" Margin="0,12,0,0" HorizontalAlignment="Stretch" />
+        <Separator Margin="0,8" />
+        
+        <TextBlock FontSize="20" FontWeight="Medium" Text="個人設定" />
         <TextBlock Margin="0,12,0,0" Text="テーマ カラー" />
         <RadioButton
             Margin="0,12,0,0"
@@ -51,12 +76,9 @@
             Content="Dark"
             GroupName="themeSelect"
             IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}" />
-
-        <TextBlock
-            Margin="0,24,0,0"
-            FontSize="20"
-            FontWeight="Medium"
-            Text="ChatAIFluentWpf について" />
+        <Separator Margin="0,8" />
+        
+        <TextBlock Margin="0,24,0,0" FontSize="20" FontWeight="Medium" Text="ChatAIFluentWpf について" />
         <TextBlock Margin="0,12,0,0" Text="{Binding ViewModel.AppVersion, Mode=OneWay}" />
     </StackPanel>
 </ui:UiPage>
