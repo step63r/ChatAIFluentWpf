@@ -76,6 +76,13 @@ namespace ChatAIFluentWpf.ViewModels
         private int _segmentationSilenceTimeoutMs = Properties.Settings.Default.Speech_SegmentationSilenceTimeoutMs;
 
         /// <summary>
+        /// WebSocketプロキシ
+        /// </summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasError))]
+        private string _wssProxy = Properties.Settings.Default.WssProxy;
+
+        /// <summary>
         /// 初期化プロンプト
         /// </summary>
         [ObservableProperty]
@@ -107,6 +114,19 @@ namespace ChatAIFluentWpf.ViewModels
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
         private VoiceVoxMetaDataStyles _selectedStyle;
+
+        /// <summary>
+        /// 入力内容がエラーを含むか
+        /// </summary>
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+        private bool _hasError = false;
+
+        /// <summary>
+        /// エラーメッセージ
+        /// </summary>
+        [ObservableProperty]
+        private string _errorMessage = string.Empty;
         #endregion
 
         #region メンバ変数
@@ -225,6 +245,7 @@ namespace ChatAIFluentWpf.ViewModels
             // 音声入力設定
             Properties.Settings.Default.SpeechServiceConnection_InitialSilenceTimeoutMs = InitialSilenceTimeoutMs;
             Properties.Settings.Default.Speech_SegmentationSilenceTimeoutMs = SegmentationSilenceTimeoutMs;
+            Properties.Settings.Default.WssProxy = WssProxy;
 
             // チャット設定
             Properties.Settings.Default.InitialSystemPrompt = InitialSystemPrompt;
@@ -249,7 +270,8 @@ namespace ChatAIFluentWpf.ViewModels
         /// <returns></returns>
         private bool CanExecuteSave()
         {
-            return SelectedStyle != null &&
+            return !HasError &&
+                SelectedStyle != null &&
                 SelectedAudioDevice != null &&
                 !string.IsNullOrEmpty(InitialSystemPrompt);
         }
@@ -295,6 +317,7 @@ namespace ChatAIFluentWpf.ViewModels
             // 音声入力設定
             InitialSilenceTimeoutMs = Properties.Settings.Default.SpeechServiceConnection_InitialSilenceTimeoutMs;
             SegmentationSilenceTimeoutMs = Properties.Settings.Default.Speech_SegmentationSilenceTimeoutMs;
+            WssProxy = Properties.Settings.Default.WssProxy;
 
             // チャット設定
             InitialSystemPrompt = Properties.Settings.Default.InitialSystemPrompt;
@@ -315,6 +338,31 @@ namespace ChatAIFluentWpf.ViewModels
                 }
             }
         }
+
+        /// <summary>
+        /// WssProxyの値が変更された時のイベントハンドラ
+        /// </summary>
+        /// <param name="value">変更後の値</param>
+        partial void OnWssProxyChanged(string value)
+        {
+            if (string.IsNullOrEmpty(value) || IsValidUri(value))
+            {
+                HasError = false;
+                ErrorMessage = string.Empty;
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = "WebSocketプロキシが正しくありません。";
+            }
+        }
+
+        /// <summary>
+        /// 指定した文字列がURIとして妥当か検証する
+        /// </summary>
+        /// <param name="uri">URI文字列</param>
+        /// <returns>妥当な場合はtrue</returns>
+        private static bool IsValidUri(string uri) => Uri.IsWellFormedUriString(uri, UriKind.Absolute);
         #endregion
     }
 }

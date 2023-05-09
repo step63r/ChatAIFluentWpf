@@ -231,6 +231,16 @@ namespace ChatAIFluentWpf.ViewModels
                     PropertyId.Speech_SegmentationSilenceTimeoutMs,
                     Properties.Settings.Default.Speech_SegmentationSilenceTimeoutMs.ToString());
                 _speechConfig.SpeechRecognitionLanguage = "ja-JP";
+                // WebSocketプロキシの設定
+                string wssProxy = Properties.Settings.Default.WssProxy;
+                if (!string.IsNullOrEmpty(wssProxy))
+                {
+                    bool ret = Uri.TryCreate(wssProxy, UriKind.Absolute, out var wssProxyUri);
+                    if (ret && wssProxyUri != null)
+                    {
+                        _speechConfig.SetProxy($"{wssProxyUri.Scheme}://{wssProxyUri.Host}", wssProxyUri.Port);
+                    }
+                }
                 #endregion
 
                 #region OpenAIの初期化

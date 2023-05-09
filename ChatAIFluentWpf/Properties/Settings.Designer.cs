@@ -154,5 +154,17 @@ namespace ChatAIFluentWpf.Properties {
                 this["Temperature"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string WssProxy {
+            get {
+                return ((string)(this["WssProxy"]));
+            }
+            set {
+                this["WssProxy"] = value;
+            }
+        }
     }
 }
