@@ -1,26 +1,39 @@
 # ChatAI Fluent WPF
 
+![](./ChatAIFluentWpf.png)
+
 ## Description
 
-Simple chat app with ChatGPT.
+ChatGPTと会話するシンプルなチャットアプリです。
+
+音声入力を文字列化してChatGPTに送り、返ってきた内容を合成音声で喋らせます。
+
+音声入力には [Azure Cognitive Services (Speech to Text)](https://azure.microsoft.com/ja-jp/products/cognitive-services/speech-to-text/) を、音声合成には [VOICEVOX Core](https://github.com/VOICEVOX/voicevox_core) を利用しています。
 
 ## Requirement
 
 - Windows 11 Pro 22H2+
 - .NET 6
 - Visual Studio 2022
-- VoiceVox Core 0.14.2
+- VOICEVOX Core 0.14.2
 
 ## Usage
 
-At first, you have to setup VoiceVox Core library.
+はじめに VOICEVOX コアライブラリをセットアップします。
 
-See [VOICEVOX/voicevox_core](https://github.com/VOICEVOX/voicevox_core) for details.
+詳細は [VOICEVOX/voicevox_core](https://github.com/VOICEVOX/voicevox_core) を参照ください。
 
-For example, you have to put these files to build output directory (bin/Debug/net6.0-windows) for GPU-accelerated execution.
+例えばCPUによる音声合成にはビルド出力先フォルダ (bin/Debug[Release]/net6.0-windows) 配下に以下のモジュール等を配置しておく必要があります。
 
 - model/
 - open_jtalk_dic_utf_8-1.11/
+- onnxruntime.dll
+- onnxruntime_providers_shared.dll
+- voicevox_core.dll
+- zlibwapi.dll
+
+GPUによる音声合成には追加で以下のモジュールが必要です。
+
 - cublas64_11.dll
 - cublasLt64_11.dll
 - cudart64_110.dll
@@ -30,18 +43,14 @@ For example, you have to put these files to build output directory (bin/Debug/ne
 - cudnn64_8.dll
 - cufft64_10.dll
 - curand64_10.dll
-- onnxruntime.dll
 - onnxruntime_providers_cuda.dll
-- onnxruntime_providers_shared.dll
 - onnxruntime_providers_tensorrt.dll
-- voicevox_core.dll
-- zlibwapi.dll
 
-Zlib is available at [NVIDIA Developer](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html#install-zlib-windows).
+zlibwapi.dll は[NVIDIA Developer](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html#install-zlib-windows) で入手可能です。
 
 ## Install
 
-Fork and clone this repository.
+このリポジトリをフォークしてクローンします。
 
 ```
 $ git clone git@github.com:yourname/ChatAIFluentWpf.git
@@ -49,11 +58,11 @@ $ git clone git@github.com:yourname/ChatAIFluentWpf.git
 
 ## Contribution
 
-1. Fork this repositor
-2. Create your feature branc
-3. Commit your change
-4. Push to the branch
-5. Create new Pull Request
+1. このリポジトリをフォークする
+2. 変更を加える
+3. 変更をコミットする
+4. ブランチにプッシュする
+5. プルリクエストを作成する
 
 ## License
 

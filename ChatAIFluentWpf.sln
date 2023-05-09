@@ -9,6 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ChatAIFluentWpf.Clr", "Chat
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{FA8C7FC3-3D74-4156-87C7-41E76461A1E3}"
 	ProjectSection(SolutionItems) = preProject
+		ChatAIFluentWpf.png = ChatAIFluentWpf.png
 		LICENSE.txt = LICENSE.txt
 		README.md = README.md
 	EndProjectSection
