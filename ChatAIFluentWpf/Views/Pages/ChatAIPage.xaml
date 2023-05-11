@@ -8,6 +8,7 @@
            xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
            xmlns:uc="clr-namespace:ChatAIFluentWpf.Views.UserControls"
            xmlns:model="clr-namespace:ChatAIFluentWpf.Models"
+           xmlns:helpers="clr-namespace:ChatAIFluentWpf.Helpers"
            Title="ChatAIPage"
            d:DataContext="{d:DesignInstance local:ChatAIPage, IsDesignTimeCreatable=False}"
            d:DesignHeight="450"
@@ -35,7 +36,8 @@
             <ItemsControl ItemsSource="{Binding ViewModel.Conversation, UpdateSourceTrigger=PropertyChanged}">
                 <ItemsControl.Template>
                     <ControlTemplate TargetType="ItemsControl">
-                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                                      helpers:ScrollViewerExtensions.AlwaysScrollToEnd="True">
                             <ItemsPresenter Margin="4" />
                         </ScrollViewer>
                     </ControlTemplate>
